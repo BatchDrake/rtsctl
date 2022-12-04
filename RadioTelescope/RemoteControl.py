@@ -154,11 +154,11 @@ class RemoteControl:
             return
 
     def accept_loop(self):
-        self.log(f'Remote control daemon started on {self.host}:{self.port}')
+        self.log(f'Remote control daemon started on: {self.host}:{self.port}')
         while self.running:
             connection, client_address = self.socket.accept()
             try:
-                self.log(f'New remote control client: {client_address}')
+                self.log(f'New remote control client: {client_address[0]}:{client_address[1]}')
                 if self.curr_client is not None:
                     self.log('Kicking previous client from system')
                     self.send('KICKED\n')

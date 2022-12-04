@@ -59,10 +59,12 @@ Log folder: {dicke_folder}
 ds = rts.DickeSwitch(log_file = f"{dicke_folder}/dicke.csv")
 ds.start()
 
-tc = rts.ThermalControl(log_file = f"{dicke_folder}/loop.csv", isave_file = f"{dicke_folder}/intfp.csv")
-rc = rts.RemoteControl(tc, ds)
+tc  = rts.ThermalControl(log_file = f"{dicke_folder}/loop.csv", isave_file = f"{dicke_folder}/intfp.csv")
+rc  = rts.RemoteControl(tc, ds)
+rms = rts.RMSListener(tc, ds, rms_file = f"{dicke_folder}/rms.csv")
 
 rc.start()
+rms.start()
 
 n = 0
 while(running):

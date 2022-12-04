@@ -31,3 +31,4 @@
 from .DickeSwitch import DickeSwitch
 from .RemoteControl import RemoteControl
 from .ThermalControl import ThermalControl
+from .RMSListener import RMSListener

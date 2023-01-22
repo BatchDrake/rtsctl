@@ -30,8 +30,6 @@
 
 import Adafruit_GPIO.GPIO as GPIO
 import RPi.GPIO as RGPIO
-from smbus2 import SMBus
-from mlx90614 import MLX90614
 
 from datetime import datetime
 
@@ -41,7 +39,8 @@ THERMAL_CONTROL_DEFAULT_LOG_FILE    = 'loop.csv'
 THERMAL_CONTROL_DEFAULT_ISAVE_FILE  = 'intfp.csv'
 THERMAL_CONTROL_DEFAULT_AVERAGE_LEN = 10
 
-TEMP_MAX_DELTA = 10
+TEMP_MAX_DELTA    = 10
+TEMP_MAX_ABSOLUTE = 80
 
 TEMP_PWM_RES   = 10e-6 # seconds
 TEMP_GPIO      = 12
@@ -82,13 +81,13 @@ class ThermalControl:
         self.T_rx     = 0
         self.T_amb    = 0
         self.pwm      = 0
-        self.deltas   = False
         self.preheat  = True
         self.preheat_target = setpoint - THERMAL_CONTROL_PREHEAT_DELTA
         
-        # Initialize temperature sensor
-        bus = SMBus(1)
-        self.sensor = MLX90614(bus, address = MLX90614_ADDR)
+        self.sensor_table   = {}
+        self.temp_table     = {}
+        self.lna_sensor     = None
+        self.amb_sensor     = None
 
         # Initialize PWM-based thermal control
         pgpio = GPIO.get_platform_gpio()
@@ -116,6 +115,29 @@ class ThermalControl:
 
         self.cooldown()
         
+    def register_sensor(self, name, sensor):
+        self.sensor_table[name] = sensor
+        self.temp_table[name]   = None
+
+    def set_lna_sensor(self, name):
+        if name is None:
+            self.lna_sensor = None
+        else:
+            if name not in self.sensor_table:
+                raise RuntimeError(fr'Sensor {name} has not been registered')
+            self.lna_sensor = name
+        
+        self.last_T = None
+
+    def set_amb_sensor(self, name):
+        if name is None:
+            self.amb_sensor = None
+        else:
+            if name not in self.sensor_table:
+                raise RuntimeError(fr'Sensor {name} has not been registered')
+            self.amb_sensor = name
+
+
     def set_logging(self, logging):
         self.logging = logging
     
@@ -206,27 +228,51 @@ class ThermalControl:
 
         return dc
 
-    def loop(self):
-        T_rx  = self.sensor.get_obj_temp()
-        T_amb = self.sensor.get_amb_temp()
+    def get_temp_state(self):
+        return self.temp_table.copy()
+        
+    def get_temps(self):
+        ok = True
+        for i in self.sensor_table:
+            sensor = self.sensor_table[i]
+            temp = sensor.get_temp()
+            sensor_ok = True
+            if temp > TEMP_MAX_ABSOLUTE:
+                self.log(f'{sensor.get_desc()}: unreasonable temperature reading ({temp:2.2f}º C)')
+                sensor_ok = False
+            elif self.temp_table[i] is not None:
+                deltaT = temp - self.temp_table[i]
+                if abs(deltaT) > TEMP_MAX_DELTA:
+                    self.log(f'{sensor.get_desc()}: unreasonable temperature increment ({deltaT:+2.2f}º C)')
+                    sensor_ok = False
 
-        if self.deltas:
-            DeltaT_rx = T_rx - self.T_rx
-            DeltaT_amb = T_amb - self.T_amb
-            if abs(DeltaT_rx) > TEMP_MAX_DELTA or abs(DeltaT_amb) > TEMP_MAX_DELTA:
-                self.log(f'Unreasonable temperature delta ({DeltaT_rx:2.2f}º C, {DeltaT_amb:2.2f}º C). \033[1;36mEmergency cooling.\033[0m')
-                self.cooldown()
-                return
-        elif abs(T_rx) > 80 or abs(T_amb) > 80:
-            self.log(f'Unreasonable temperature ({T_rx:2.2f}º C, {T_amb:2.2f}º C). \033[1;36mEmergency cooling.\033[0m')
+            if sensor_ok:
+                self.temp_table[i] = temp
+            
+            ok = ok and sensor_ok            
+        
+        return ok
+    
+    def loop(self):
+        if not self.get_temps():
+            self.log(f'Error condition in temperature sensing. \033[1;36mEmergency cooling.\033[0m')
             self.cooldown()
             return
         
-        self.T_rx   = T_rx
-        self.T_amb  = T_amb
-        self.T_rx   = self.smooth_T(self.T_rx)
+        if self.lna_sensor is None:
+            self.log(f'No LNA temperature sensor defined (yet). Standing by...')
+            self.cooldown()
+            return
+        
+        if self.amb_sensor is not None:
+            self.T_amb = self.temp_table[self.amb_sensor]
+        else:
+            self.T_amb = None
+        
+        T_rx = self.temp_table[self.lna_sensor]
+
+        self.T_rx   = self.smooth_T(T_rx)
         self.pwm    = self.adjust_resistor(self.T_rx, self.T_amb)
-        self.deltas = True
         
     def get_state(self):
         return self.setpoint, self.T_rx, self.T_amb, self.pwm

@@ -59,7 +59,18 @@ Log folder: {dicke_folder}
 ds = rts.DickeSwitch(log_file = f"{dicke_folder}/dicke.csv")
 ds.start()
 
+# Create thermal sensor
+lna_sensor = rts.MLX90614Sensor(sensor = 'object')
+amb_sensor = rts.MLX90614Sensor(lna_sensor, sensor = 'ambient')
+
 tc  = rts.ThermalControl(log_file = f"{dicke_folder}/loop.csv", isave_file = f"{dicke_folder}/intfp.csv")
+
+tc.register_sensor('LNA', lna_sensor)
+tc.register_sensor('AMB', amb_sensor)
+
+tc.set_lna_sensor('LNA')
+tc.set_amb_sensor('AMB')
+
 rc  = rts.RemoteControl(tc, ds)
 rms = rts.RMSListener(tc, ds, rms_file = f"{dicke_folder}/rms.csv")
 

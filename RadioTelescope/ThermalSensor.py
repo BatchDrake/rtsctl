@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 Gonzalo J. Carracedo <BatchDrake@gmail.com>
+# Copyright (c) 2023 Gonzalo J. Carracedo <BatchDrake@gmail.com>
 #
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,9 +28,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-from .DickeSwitch import DickeSwitch
-from .RemoteControl import RemoteControl
-from .ThermalControl import ThermalControl
-from .RMSListener import RMSListener
-from .ThermalSensor import ThermalSensor
-from .MLX90614Sensor import MLX90614Sensor
+from abc import ABC, abstractmethod
+
+class ThermalSensor(ABC):
+  @abstractmethod
+  def get_temp(self):
+    pass
+
+
+  @abstractmethod
+  def get_desc(self):
+    pass

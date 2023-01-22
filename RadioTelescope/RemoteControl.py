@@ -76,9 +76,14 @@ class RemoteControl:
 
     def get_thermal_control_state(self):
         setpoint, T_rx, T_amb, pwm = self.thermal_control.get_state()
+        temp_state = self.thermal_control.get_temp_state()
 
-        return f'THERMAL CONTROL STATE: SETPOINT {setpoint:2.2f} RX {T_rx:2.2f} AMBIENT {T_amb:2.2f} PWM {pwm:2.2f}%'
- 
+        string = f'THERMAL CONTROL STATE: SETPOINT {setpoint:2.2f} RX {T_rx:2.2f} AMBIENT {T_amb:2.2f} PWM {pwm:2.2f}%\n'
+        for i in temp_state:
+            string += f'THERMAL SENSOR {i}: {temp_state[i]:2.2f}\n'
+
+        return string
+    
     def send(self, string):
         if self.curr_client is not None:
             self.curr_client.sendall(bytes(string, 'utf-8'))
@@ -109,7 +114,7 @@ class RemoteControl:
             else:
                 self.send('DICKE COMMAND INVALID (TOO MANY ARGS)\n')
         elif cmd == 'TEMP':
-            self.send(f'{self.get_thermal_control_state()}\n')
+            self.send(self.get_thermal_control_state())
         elif cmd == 'CLOSE':
             self.send('BYE\n')
             self.log('Client left gracefully')

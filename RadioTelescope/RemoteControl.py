@@ -78,7 +78,11 @@ class RemoteControl:
         setpoint, T_rx, T_amb, pwm = self.thermal_control.get_state()
         temp_state = self.thermal_control.get_temp_state()
 
-        string = f'THERMAL CONTROL STATE: SETPOINT {setpoint:2.2f} RX {T_rx:2.2f} AMBIENT {T_amb:2.2f} PWM {pwm:2.2f}%\n'
+        if self.thermal_control.is_enabled():
+            string = f'THERMAL CONTROL STATE: SETPOINT {setpoint:2.2f} RX {T_rx:2.2f} AMBIENT {T_amb:2.2f} PWM {pwm:2.2f}%\n'
+        else:
+            string = f'THERMAL CONTROL STATE: SETPOINT {setpoint:2.2f} RX {T_rx:2.2f} AMBIENT {T_amb:2.2f} DISABLED\n'
+        
         for i in temp_state:
             string += f'THERMAL SENSOR {i}: {temp_state[i]:2.2f}\n'
 
@@ -114,7 +118,22 @@ class RemoteControl:
             else:
                 self.send('DICKE COMMAND INVALID (TOO MANY ARGS)\n')
         elif cmd == 'TEMP':
-            self.send(self.get_thermal_control_state())
+            if len(args) == 1:
+                self.send(self.get_thermal_control_state())
+            elif len(args) == 2:
+                if args[1].upper() == 'ON':
+                    self.thermal_control.enable()
+                    self.log('Client enabled thermal control')
+                elif args[1].upper() == 'OFF':
+                    self.thermal_control.disable()
+                    self.log('Client disabled thermal control')
+                else:
+                    self.send('TEMP COMMAND INVALID (UNKNOWN ORDER)\n')
+                    return
+
+                self.send(self.get_thermal_control_state())
+            else:
+                self.send('TEMP COMMAND INVALID (TOO MANY ARGS)\n')
         elif cmd == 'CLOSE':
             self.send('BYE\n')
             self.log('Client left gracefully')

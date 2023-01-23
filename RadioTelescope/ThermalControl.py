@@ -84,6 +84,7 @@ class ThermalControl:
         self.preheat  = True
         self.preheat_target = setpoint - THERMAL_CONTROL_PREHEAT_DELTA
         
+        self.enabled  = True
         self.sensor_table   = {}
         self.temp_table     = {}
         self.lna_sensor     = None
@@ -115,6 +116,16 @@ class ThermalControl:
 
         self.cooldown()
         
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
+
+    def is_enabled(self):
+        self.enabled
+    
     def register_sensor(self, name, sensor):
         self.sensor_table[name] = sensor
         self.temp_table[name]   = None
@@ -263,7 +274,7 @@ class ThermalControl:
             self.log(f'No LNA temperature sensor defined (yet). Standing by...')
             self.cooldown()
             return
-        
+
         if self.amb_sensor is not None:
             self.T_amb = self.temp_table[self.amb_sensor]
         else:
@@ -272,6 +283,13 @@ class ThermalControl:
         T_rx = self.temp_table[self.lna_sensor]
 
         self.T_rx   = self.smooth_T(T_rx)
+
+
+        if not self.enabled is None:
+            self.log(f'Thermal control disabled (LNA temp: {self.T_rx:2.2f}º C)')
+            self.cooldown()
+            return
+
         self.pwm    = self.adjust_resistor(self.T_rx, self.T_amb)
         
     def get_state(self):

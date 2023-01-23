@@ -29,6 +29,7 @@
 #
 
 from datetime import datetime
+import traceback
 import numpy as np
 import socket
 import threading
@@ -191,7 +192,10 @@ class RMSListener:
                               try:
                                   self.parse_line(args)
                               except BaseException as exception:
-                                  self.log(f"Malformed line ({args})")
+                                  self.log(f"Failed to parse data line.")
+                                  formatted_lines = traceback.format_exc().splitlines()
+                                  for i in formatted_lines:
+                                    self.log(f'  {i}')
                     command = ''
                 elif b[0] != 13:
                     command += b.decode('utf-8')

@@ -79,6 +79,9 @@ class RMSListener:
                 print(f'{timestamp} -RMS-S- {string}')
     
     def process_data(self):
+      if len(self.data_list) == 0:
+        return None
+      
       data  = np.array(self.data_list)
       means = np.mean(data, axis = 0)
       stds  = np.std(data, axis = 0)
@@ -135,7 +138,7 @@ class RMSListener:
           self.data_list = [] # Reset current reading list
 
           # Switch back to REF, this marks the end of an ANT reading
-          if state:
+          if state and reading is not None:
             ref_reading = self.get_last_ref()
             if ref_reading is not None:
               pwr = reading[3] / ref_reading[3]

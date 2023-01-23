@@ -80,7 +80,7 @@ class RMSListener:
     
     def process_data(self):
       if len(self.data_list) == 0:
-        return None
+        return None, None, None, None, None, None
       
       data  = np.array(self.data_list)
       means = np.mean(data, axis = 0)
@@ -102,6 +102,9 @@ class RMSListener:
         mean_power, mean_T_rx, mean_T_amb, std_power, std_T_rx, std_T_amb = \
           self.process_data()
 
+        if mean_power is None:
+          return None
+        
         self.fp.write(
           f'{self.switch_time.timestamp()},{time_now.timestamp()},{len(self.data_list)},' +
           f'{1 if self.prev_ref else 0},' +

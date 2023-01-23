@@ -191,7 +191,7 @@ class RMSListener:
                               try:
                                   self.parse_line(args)
                               except BaseException as exception:
-                                  self.log("Malformed line")
+                                  self.log("Malformed line ({args})")
                     command = ''
                 elif b[0] != 13:
                     command += b.decode('utf-8')

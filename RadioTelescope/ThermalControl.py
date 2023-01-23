@@ -124,7 +124,7 @@ class ThermalControl:
         self.enabled = False
 
     def is_enabled(self):
-        self.enabled
+        return self.enabled
     
     def register_sensor(self, name, sensor):
         self.sensor_table[name] = sensor

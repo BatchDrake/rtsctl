@@ -68,10 +68,7 @@ class RMSListener:
         self.last_ant_reading = None
 
         # Initialize RMS save file
-        try:
-            self.fp = open(rms_file, "r+")
-        except FileNotFoundError:
-            self.fp = open(rms_file, "w+")
+        self.fp = open(rms_file, "a")
 
     def log(self, string):
         if self.logging:

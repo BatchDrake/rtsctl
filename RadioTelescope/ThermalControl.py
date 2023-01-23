@@ -285,7 +285,7 @@ class ThermalControl:
         self.T_rx   = self.smooth_T(T_rx)
 
 
-        if not self.enabled is None:
+        if not self.enabled:
             self.log(f'Thermal control disabled (LNA temp: {self.T_rx:2.2f}º C)')
             self.cooldown()
             return
